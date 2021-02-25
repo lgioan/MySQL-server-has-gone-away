@@ -4,7 +4,6 @@ https://stackoverflow.com/a/60894948/3872976
 
 import logging
 
-from django.db import OperationalError, InterfaceError, IntegrityError
 from django.db.backends.mysql import base
 
 logger = logging.getLogger('mysql_server_has_gone_away')
@@ -14,7 +13,7 @@ def check_mysql_gone_away(db_wrapper):
         def wrapper(self, query, args=None):
             try:
                 return f(self, query, args)
-            except (OperationalError, InterfaceError) as e:
+            except (base.Database.OperationalError, base.Database.InterfaceError) as e:
                 logger.warn("MySQL server has gone away. Rerunning query: %s", query)
                 if (
                     'MySQL server has gone away' in str(e) or
@@ -27,7 +26,7 @@ def check_mysql_gone_away(db_wrapper):
                 # Map some error codes to IntegrityError, since they seem to be
                 # misclassified and Django would prefer the more logical place.
                 if e.args[0] in self.codes_for_integrityerror:
-                    raise IntegrityError(*tuple(e.args))
+                    raise base.Database.IntegrityError(*tuple(e.args))
                 raise
         return wrapper
 
